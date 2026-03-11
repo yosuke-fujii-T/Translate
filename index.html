@@ -72,6 +72,7 @@
 </div>
 
 <script>
+  // --- 言語データなどはそのまま ---
   const langData = [
     ['日本語','ja-JP','ja'],['英語','en-US','en'],['中国語(簡体)','zh-CN','zh-CN'],['中国語(繁体)','zh-TW','zh-TW'],['中国語(広東)','zh-HK','zh-HK'],['韓国語','ko-KR','ko'],['ベトナム語','vi-VN','vi'],['タイ語','th-TH','th'],['フィリピン語','tl-PH','tl'],['インドネシア語','id-ID','id'],['マレー語','ms-MY','ms'],['ネパール語','ne-NP','ne'],['ヒンディー語','hi-IN','hi'],['フランス語','fr-FR','fr'],['スペイン語','es-ES','es'],['ポルトガル語','pt-PT','pt'],['ドイツ語','de-DE','de'],['イタリア語','it-IT','it'],['ロシア語','ru-RU','ru'],['ウクライナ語','uk-UA','uk'],['トルコ語','tr-TR','tr'],['アラビア語','ar-SA','ar'],['ペルシャ語','fa-IR','fa']
   ];
@@ -81,14 +82,13 @@
   let isListening = false, recognition, lastChunkNorm = "", translationQueue = Promise.resolve(), chatLog = [];
   let transCache = new Map(), lastSpeechTime = Date.now(), segmentStart = Date.now(), translateStart = 0;
 
-  // 初期化
   langData.forEach(l => {
     selIn.innerHTML += `<option value="${l[1]}">${l[0]}</option>`;
     selOut.innerHTML += `<option value="${l[2]}">${l[0]}</option>`;
   });
   selIn.value = "ja-JP"; selOut.value = "zh-CN";
 
-  // 設定読み込み
+  // 設定読み込み・保存ロジック（中略：以前と同じ）
   window.addEventListener("load", () => {
     const saved = ["fontSize", "fontColor", "langIn", "langOut", "uiMode", "splitSec", "anonMode", "datePos"];
     saved.forEach(k => {
@@ -109,7 +109,6 @@
     });
   });
 
-  // 保存設定
   function saveSettings() {
     localStorage.setItem("fontSize", sizeSlider.value);
     localStorage.setItem("fontColor", mainColor.value);
@@ -137,7 +136,11 @@
     };
   });
 
+  // --- 【重要】ここからマイク無限ループ防止の修正版 ---
+
   function startRecognition() {
+    if (recognition) { recognition.abort(); } // 既存があれば強制終了
+    
     const Speech = window.webkitSpeechRecognition || window.SpeechRecognition;
     recognition = new Speech();
     recognition.lang = selIn.value;
@@ -145,7 +148,12 @@
     recognition.interimResults = true;
 
     recognition.onerror = (e) => {
-      if(isListening && e.error !== 'aborted') setTimeout(() => recognition.start(), 500);
+      console.error("Speech Error:", e.error);
+      if (e.error === 'no-speech') return; // 無音エラーは無視
+      if (isListening && e.error !== 'aborted') {
+        // 即座に再起動せず、0.5秒待つことで点滅を防止
+        setTimeout(() => { if(isListening) recognition.start(); }, 500);
+      }
     };
 
     recognition.onresult = e => {
@@ -158,32 +166,41 @@
           interim += e.results[i][0].transcript;
         }
       }
-      // 区切り時間による強制確定
+      // 区切り時間による確定
       if (interim && (Date.now() - segmentStart > parseFloat(splitSecInput.value) * 1000)) {
         enqueueTranslation(interim.trim());
         segmentStart = Date.now();
-        recognition.stop(); // 瞬時に再起動させてバッファをクリア
+        // 連続再起動を避けるためstopではなくバッファ管理のみに
       } else {
         renderInterim(interim);
       }
     };
 
-    recognition.onend = () => { if (isListening) recognition.start(); };
+    recognition.onend = () => {
+      // 終了したとき、もし「開始状態」なら0.3秒後に再起動
+      if (isListening) {
+        setTimeout(() => {
+          try { if(isListening) recognition.start(); } catch(e){}
+        }, 300);
+      }
+    };
+
     recognition.start();
     document.getElementById('status-dot').textContent = "LIVE";
   }
 
-  // 無音停止回避（Watchdog）
+  // 無音停止回避（Watchdog）の間隔を広げる（15秒→30秒）
   setInterval(() => {
-    if (isListening && Date.now() - lastSpeechTime > 15000) {
-      recognition.stop();
+    if (isListening && Date.now() - lastSpeechTime > 30000) {
+      console.log("Watchdog: Restarting...");
+      recognition.stop(); 
       lastSpeechTime = Date.now();
     }
-  }, 5000);
+  }, 10000);
 
-  function applyAnon(t) {
-    return t.replace(/([一-龠ぁ-んァ-ヶ]{2,8})(さん|様|君|氏|先生|病院|銀行|会社)/g, "[X]$2");
-  }
+  // --- 以降、翻訳・UI処理（以前と同じ） ---
+
+  function applyAnon(t) { return t.replace(/([一-龠ぁ-んァ-ヶ]{2,8})(さん|様|君|氏|先生|病院|銀行|会社)/g, "[X]$2"); }
 
   async function enqueueTranslation(chunk) {
     if(!chunk) return;
@@ -214,10 +231,8 @@
     row.className = "log-item";
     row.innerHTML = `<div class="original">${finalO}</div><div class="translated" style="color:${mainColor.value}">${finalT}</div>`;
     
-    // 空欄挿入防止策：displayAreaが空でもそうでなくても、常に先頭に挿入
     displayArea.insertBefore(row, displayArea.firstChild);
 
-    // ログ記録用
     const now = new Date();
     const ts = now.getFullYear().toString().slice(-2) + 
                (now.getMonth()+1).toString().padStart(2,'0') + 
@@ -233,7 +248,6 @@
 
     const latency = Date.now() - translateStart;
     document.getElementById('status-dot').textContent = "LIVE " + latency + "ms";
-    
     while (displayArea.children.length > 50) displayArea.removeChild(displayArea.lastChild);
   }
 
@@ -253,12 +267,12 @@
   btnToggle.onclick = () => {
     if (!isListening) {
       isListening = true; chatLog = [];
-      displayArea.innerHTML = ""; // 開始時に画面クリア（空欄挿入防止）
+      displayArea.innerHTML = "";
       startRecognition();
       btnToggle.textContent = "停止・保存"; btnToggle.style.background = "#cc0000";
     } else {
       isListening = false;
-      recognition.stop();
+      if(recognition) recognition.stop();
       if (chatLog.length > 0) {
         const blob = new Blob([chatLog.join("\n")], { type: "text/plain" });
         const a = document.createElement("a");
