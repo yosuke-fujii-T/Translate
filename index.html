@@ -3,42 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>SimultaneousInterpretation</title> 
-
+  <title>SimultaneousInterpretation</title>
   <style>
     :root { --main-fs: 75px; --sub-fs: 25px; }
-    html, body { height: 100%; margin: 0; padding: 0; background: #000; color: #fff; overflow: hidden; font-family: sans-serif; }
+    html, body { height: 100%; margin: 0; padding: 0; background: #000; color: #fff; overflow: hidden; font-family: "BIZ UDPGothic", "Hiragino Sans", "Meiryo", sans-serif; }
     body { display: flex; flex-direction: column; }
     
-    /* 上部操作バー */
+    /* ヘッダー UI */
     .header { background: #1a1a1a; padding: 6px 12px; border-bottom: 2px solid #333; flex-shrink: 0; font-size: 11px; z-index: 100; display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; overflow-x: auto; }
     .group { background: #222; padding: 3px 8px; border-radius: 4px; border: 1px solid #444; display: flex; gap: 6px; align-items: center; white-space: nowrap; }
     input, select { background: #333; color: #fff; border: 1px solid #555; padding: 2px; border-radius: 4px; font-size: 11px; }
     
-    /* メイン表示エリア */
+    /* 表示メインエリア */
     #display-area { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; scroll-behavior: smooth; }
-    #interim-container { min-height: 160px; margin-bottom: 10px; border-bottom: 2px solid #333; flex-shrink: 0; padding-bottom: 10px; }
-    #log-container { display: flex; flex-direction: column; gap: 20px; }
+    
+    /* 暫定ボックス：白・標準・2行分高さを固定 */
+    #interim-container { 
+      min-height: 3.0em; 
+      max-height: 3.0em;
+      margin-bottom: 10px; 
+      border-bottom: 2px solid #0066ff; 
+      flex-shrink: 0; 
+      padding-bottom: 5px; 
+      font-size: 24px; 
+      color: #ffffff; 
+      font-style: normal; 
+      opacity: 0.7; 
+      word-wrap: break-word; 
+      overflow-y: hidden;
+      line-height: 1.5;
+    }
+    
+    /* 確定ログ */
+    #log-container { display: flex; flex-direction: column; gap: 30px; }
+    .log-item { transition: opacity 0.5s; }
+    .orig-text { font-size: var(--sub-fs); color: #888; border-left: 5px solid #444; padding-left: 15px; margin-bottom: 8px; font-weight: 500; }
+    .trans-text { font-weight: 900; line-height: 1.2; word-wrap: break-word; letter-spacing: -0.01em; font-size: var(--main-fs); }
+    
+    /* 過去ログの減衰 */
+    .log-item:not(:first-child) { opacity: 0.2; filter: grayscale(1); }
+    .log-item:not(:first-child) .trans-text { font-size: calc(var(--main-fs) * 0.5); }
 
-    .orig-text { font-size: var(--sub-fs); color: #888; border-left: 5px solid #444; padding-left: 15px; margin-bottom: 5px; }
-    .trans-text { font-weight: 900; line-height: 1.1; word-wrap: break-word; }
-    .large-size .trans-text { font-size: var(--main-fs); }
-    .large-size .orig-text { font-size: var(--sub-fs); color: #aaa; }
-
-    /* 過去ログの演出（集中を妨げないよう薄く） */
-    .log-item:not(:first-child) { opacity: 0.25; filter: blur(0.5px); transition: 0.5s; }
-    .log-item:not(:first-child) .trans-text { font-size: 32px; }
-    .log-item:not(:first-child) .orig-text { font-size: 18px; }
-
-    /* 右下クレジット */
-    .credit { position: fixed; bottom: 12px; right: 20px; font-size: 14px; color: #ffffff; font-weight: bold; z-index: 200; pointer-events: none; text-shadow: 1px 1px 2px #000; }
+    /* フッター：バージョンとクレジット */
+    .footer-info { position: fixed; bottom: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; pointer-events: none; z-index: 200; }
+    .footer-text { font-size: 14px; color: #ffffff; font-weight: bold; text-shadow: 1px 1px 3px #000; }
 
     /* 説明書モーダル */
-    #btn-help { background: #444; color: #fff; border: 1px solid #666; padding: 3px 8px; cursor: pointer; border-radius: 4px; }
-    #modal-help { display: none; position: fixed; top: 5%; left: 5%; width: 90%; height: 85%; background: #1a1a1a; border: 2px solid #555; padding: 25px; overflow-y: auto; z-index: 300; line-height: 1.6; border-radius: 12px; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
-    #modal-help h2 { border-bottom: 2px solid #0066ff; padding-bottom: 10px; }
-    #modal-help h3 { color: #0066ff; margin-bottom: 5px; }
-    #btn-close-help { background: #cc0000; color: #fff; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 20px; }
+    #modal-help { display: none; position: fixed; top: 5%; left: 5%; width: 90%; height: 85%; background: #1a1a1a; border: 2px solid #555; padding: 25px; overflow-y: auto; z-index: 300; line-height: 1.6; border-radius: 12px; box-shadow: 0 0 50px #000; }
+    .help-section { margin-bottom: 20px; background: #252525; padding: 15px; border-radius: 8px; }
+    #btn-close-help { background: #cc0000; color: #fff; border: none; padding: 15px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; }
+
+    /* メーター */
+    #vol-meter { width: 40px; height: 10px; background: #333; border-radius: 2px; overflow: hidden; display: inline-block; vertical-align: middle; border: 1px solid #555; }
+    #vol-bar { width: 0%; height: 100%; background: #00ff00; }
   </style>
 </head>
 <body>
@@ -47,72 +64,100 @@
   <button id="btn-toggle" style="background:#0066ff; color:#fff; border:none; padding:8px 15px; border-radius:8px; font-weight:bold; cursor:pointer;">同時翻訳開始</button>
   <div class="group">音声:<select id="sel-in"></select> 翻訳:<select id="sel-out"></select></div>
   <div class="group">色:<input type="color" id="main-color" value="#ffff00"> 大:<input type="range" id="size-slider" min="40" max="150" value="75" style="width:50px"></div>
-  <div class="group">ファイル名:<input type="text" id="file-name" placeholder="log" style="width:60px"> 日時:<select id="name-date-pos"><option value="none">無</option><option value="pre" selected>前</option><option value="post">後</option></select></div>
-  <div class="group">自動分割:<input type="number" id="split-sec" value="2.0" step="0.5" style="width:35px">秒 自動保存:<input type="number" id="auto-save-min" value="10" style="width:35px">分</div>
-  <button id="btn-help">説明書</button> <span id="status-dot" style="font-size:10px; color:#888;">READY</span>
+  <div class="group">ログ名:<input type="text" id="file-name" placeholder="(空で保存無)" style="width:80px"> 日時:<select id="name-date-pos"><option value="none">無</option><option value="pre" selected>前</option><option value="post">後</option></select></div>
+  <div class="group">分割:<input type="number" id="split-sec" value="1.0" step="0.1" style="width:35px">秒 保存:<input type="number" id="auto-save-min" value="10" style="width:35px">分</div>
+  <button onclick="document.getElementById('modal-help').style.display='block'" style="background:#444; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer;">操作マニュアル</button>
+  <div class="group">
+    <div id="vol-meter"><div id="vol-bar"></div></div>
+    <span id="status-dot" style="font-size:10px; color:#aaa; margin-left:5px;">READY</span>
+  </div>
 </div>
 
 <div id="display-area">
-  <div id="interim-container" class="large-size"></div>
+  <div id="interim-container"></div>
   <div id="log-container"></div>
 </div>
 
-<div id="modal-help">
-  <h2>📖 同時翻訳マスター 操作説明書</h2>
-
-  <h3>1. 使用手順</h3>
-  <ol>
-    <li><b>設定の確認</b>: 上部バーで「音声（話す側）」と「翻訳（表示側）」を選択します。</li>
-    <li><b>開始</b>: <b>「同時翻訳開始」</b>ボタンを押し、マイクを許可します。</li>
-    <li><b>対話</b>: 画面に向かって話すと、リアルタイムで字幕が表示されます。</li>
-    <li><b>終了</b>: <b>「停止」</b>ボタンで記録を自動保存し、セッションを終了します。</li>
-  </ol>
-
-  <h3>2. 動作環境と安定性</h3>
-  <ul>
-    <li><b>推奨ブラウザ</b>: <b>Google Chrome</b> または <b>Microsoft Edge</b>。※SafariやFirefoxでは音声認識が動作しません。</li>
-    <li><b>ネット環境</b>: 音声解析と翻訳はGoogleのサーバーで行うため、安定したWi-Fi環境が必要です。</li>
-    <li><b>API制限</b>: 短時間の大量リクエストにより翻訳が止まる場合があります。一文を丁寧に区切って話すと安定します。</li>
-  </ul>
-
-  <h3>3. プライバシーと機密保持</h3>
-  <ul>
-    <li><b>通信の安全</b>: 通信は<b>HTTPSで暗号化</b>されており、道中で第三者が内容を盗み見ることはできません。</li>
-    <li><b>データの扱い</b>: 音声およびテキストは処理のためGoogleのサーバーへ送信されます。Google翻訳のWebサイト利用時と同様の機密レベルとなります。</li>
-    <li><b>利用上の注意</b>: パスワードや極めて機密性の高い個人情報のやり取りには使用しないでください。</li>
-  </ul>
-
-  <h3>4. 困った時の対応策</h3>
-  <ul>
-    <li><b>翻訳が更新されない</b>: 一度「停止」し、ブラウザを再読み込みしてください。改善しない場合は数分置いて再開するか、別のブラウザを試してください。</li>
-    <li><b>音声認識が反応しない</b>: マイクの接続とブラウザの「マイク許可」設定を再確認してください。</li>
-  </ul>
-
-  <h3>5. データの活用</h3>
-  <ul>
-    <li><b>Excel連携</b>: 保存されたテキストをコピーし、Excel等のA1セルに貼り付けるだけで「時間・原文・翻訳」が綺麗に列分けされます。</li>
-  </ul>
-
-  <button id="btn-close-help">説明書を閉じる</button>
+<div class="footer-info">
+  <div class="footer-text">Ver 203 Professional</div>
+  <div class="footer-text">Created by フジイヨウスケ with Gemini & ChatGPT</div>
 </div>
 
-<div class="credit">Created by フジイヨウスケ with Gemini & ChatGPT</div>
+<div id="modal-help">
+  <h2>📖 SimultaneousInterpretation 操作マニュアル</h2>
+  
+  <div class="help-section">
+    <h3>1. 基本的な使用手順</h3>
+    <ul>
+      <li><b>事前設定:</b> 上部バーで「音声（話す側）」と「翻訳（表示側）」を選択。デフォルトは日本語→中国語です。</li>
+      <li><b>開始:</b> 青色の「同時翻訳開始」ボタンをクリックし、マイクの使用を許可してください。</li>
+      <li><b>発話:</b> 画面に向かって話すと、上部の青枠（暫定ボックス）に文字が溜まり、無音を検知すると下部に確定ログとして出力されます。</li>
+      <li><b>終了・保存:</b> 「停止」ボタンを押すと、ログがテキストファイルとして自動保存されます。</li>
+    </ul>
+  </div>
+
+  <div class="help-section">
+    <h3>2. セキュリティと高度な文字起こし活用</h3>
+    <ul>
+      <li><b>高セキュリティ文字起こし:</b> 「音声」と「翻訳」を同じ言語（例：日本→日本）に設定した場合、外部の翻訳APIサーバーへテキストを送信する処理が完全にスキップされます。これにより、情報の外部露出を極限まで抑えた<b>「高セキュリティ文字起こし専用ソフト」</b>としても安心して活用いただけます。</li>
+      <li><b>情報の保護:</b> 同言語設定時は翻訳通信が発生しないため、機密性の高い会議の「文字起こし専用ソフト」として安全かつ強力に機能します。</li>
+      <li><b>通信の安全性:</b> 全ての通信はHTTPSで暗号化されており、データの漏洩を防止します。</li>
+    </ul>
+  </div>
+
+  <div class="help-section">
+    <h3>3. 想定される使用用途</h3>
+    <ul>
+      <li><b>多言語会議:</b> 海外拠点とのミーティングにおけるリアルタイム字幕。</li>
+      <li><b>高精度文字起こし:</b> 議事録作成の補助ツールとして（同言語設定で活用）。</li>
+      <li><b>対面接客:</b> 外国人観光客への窓口業務通訳ツール。</li>
+      <li><b>語学学習:</b> 発音チェックや、翻訳表現の比較学習に。</li>
+    </ul>
+  </div>
+
+  <div class="help-section">
+    <h3>4. 利用上の注意点</h3>
+    <ul>
+      <li><b>音声解析の仕組み:</b> 音声から文字への変換はブラウザの標準機能（Googleサーバー等）を利用します。</li>
+      <li><b>マイク品質:</b> 精度はマイクに依存します。静かな環境での使用や外付けマイクの使用を推奨します。</li>
+      <li><b>文字化け対策:</b> 本ソフトは「BOM付きUTF-8」で保存します。「DF」等の古い比較ソフトでもそのまま閲覧可能です。</li>
+    </ul>
+  </div>
+
+  <div class="help-section">
+    <h3>5. 困った時の対処法（Q&A）</h3>
+    <ul>
+      <li><b>Q. 字幕が出ない:</b> ブラウザの「マイク許可」設定が「オン」になっているか確認してください。</li>
+      <li><b>Q. 翻訳が途中で止まった:</b> ネットの瞬断が原因の場合があります。一度「停止」してリロード（再読み込み）してください。</li>
+      <li><b>Q. ウォッチドッグと表示された:</b> 15秒間無音だったため、接続を自動リフレッシュしました。そのまま発話を再開できます。</li>
+      <li><b>Q. 文が細切れになる:</b> 上部バーの「分割」秒数を長め（1.5〜2.0秒）に設定してください。</li>
+    </ul>
+  </div>
+
+  <div class="help-section">
+    <h3>6. データの保存と連携</h3>
+    <ul>
+      <li><b>Excel連携:</b> 保存ログはタブ区切りです。ExcelのA1セルに貼り付けるだけで綺麗に整列します。</li>
+      <li><b>自動保存:</b> 万が一ブラウザが閉じても、設定した分ごとにバックアップが自動保存されます。</li>
+    </ul>
+  </div>
+  <button id="btn-close-help" onclick="document.getElementById('modal-help').style.display='none'">マニュアルを閉じる</button>
+</div>
 
 <script>
-  const langData = [
-    ['日本語','ja-JP','ja'],['英語','en-US','en'],['中国語(簡体)','zh-CN','zh-CN'],['中国語(繁体)','zh-TW','zh-TW'],['中国語(広東)','zh-HK','zh-HK'],['韓国語','ko-KR','ko'],['ベトナム語','vi-VN','vi'],['タイ語','th-TH','th'],['フランス語','fr-FR','fr'],['スペイン語','es-ES','es'],['ドイツ語','de-DE','de'],['ロシア語','ru-RU','ru'],['イタリア語','it-IT','it'],['ポルトガル語','pt-PT','pt'],['インドネシア語','id-ID','id'],['フィリピン語','tl-PH','tl'],['ヒンディー語','hi-IN','hi'],['アラビア語','ar-SA','ar'],['トルコ語','tr-TR','tr'],['ポーランド語','pl-PL','pl'],['オランダ語','nl-NL','nl'],['スウェーデン語','sv-SE','sv'],['ギリシャ語','el-GR','el'],['ペルシャ語','fa-IR','fa'],['マレー語','ms-MY','ms'],['ビルマ語','my-MM','my'],['カンボジア語','km-KH','km'],['ラオス語','lo-LA','lo'],['ウクライナ語','uk-UA','uk'],['モンゴル語','mn-MN','mn']
-  ];
+  const langData = [['日本語','ja-JP','ja'],['英語','en-US','en'],['中国語(簡体)','zh-CN','zh-CN'],['中国語(繁体)','zh-TW','zh-TW'],['中国語(広東)','zh-HK','zh-HK'],['韓国語','ko-KR','ko'],['ベトナム語','vi-VN','vi'],['タイ語','th-TH','th'],['フランス語','fr-FR','fr'],['スペイン語','es-ES','es'],['ドイツ語','de-DE','de'],['ロシア語','ru-RU','ru'],['イタリア語','it-IT','it'],['ポルトガル語','pt-PT','pt'],['インドネシア語','id-ID','id'],['フィリピン語','tl-PH','tl'],['ヒンディー語','hi-IN','hi'],['アラビア語','ar-SA','ar'],['トルコ語','tr-TR','tr'],['ポーランド語','pl-PL','pl'],['オランダ語','nl-NL','nl'],['スウェーデン語','sv-SE','sv'],['ギリシャ語','el-GR','el'],['ペルシャ語','fa-IR','fa'],['マレー語','ms-MY','ms'],['ビルマ語','my-MM','my'],['カンボジア語','km-KH','km'],['ラオス語','lo-LA','lo'],['ウクライナ語','uk-UA','uk']];
 
-  const selIn = document.getElementById('sel-in'), selOut = document.getElementById('sel-out'), btnToggle = document.getElementById('btn-toggle'), logContainer = document.getElementById('log-container'), interimContainer = document.getElementById('interim-container'), mainColor = document.getElementById('main-color'), sizeSlider = document.getElementById('size-slider'), splitSecInput = document.getElementById('split-sec'), autoSaveInput = document.getElementById('auto-save-min'), fileNameInput = document.getElementById('file-name'), nameDatePos = document.getElementById('name-date-pos');
+  const selIn = document.getElementById('sel-in'), selOut = document.getElementById('sel-out'), btnToggle = document.getElementById('btn-toggle'), logContainer = document.getElementById('log-container'), interimContainer = document.getElementById('interim-container'), mainColor = document.getElementById('main-color'), sizeSlider = document.getElementById('size-slider'), splitSecInput = document.getElementById('split-sec'), autoSaveInput = document.getElementById('auto-save-min'), fileNameInput = document.getElementById('file-name'), nameDatePos = document.getElementById('name-date-pos'), volBar = document.getElementById('vol-bar'), statusDot = document.getElementById('status-dot');
 
-  let isListening = false, recognition, chatLog = [], processedCharsCount = 0, lastResultTime = Date.now(), autoSaveTimer;
+  let isListening = false, recognition, chatLog = [], lastSpeechTime = 0, autoSaveTimer, watchdogInterval, currentText = "";
+  let audioContext, analyser, dataArray, animationId;
 
   langData.forEach(l => { selIn.innerHTML += `<option value="${l[1]}">${l[0]}</option>`; selOut.innerHTML += `<option value="${l[2]}">${l[0]}</option>`; });
 
   function updateSize(v) { document.documentElement.style.setProperty('--main-fs', v + 'px'); document.documentElement.style.setProperty('--sub-fs', Math.max(16, v * 0.35) + 'px'); }
   
   window.addEventListener("load", () => {
-    ["fontSize", "fontColor", "langIn", "langOut", "fName"].forEach(k => {
+    ["fontSize", "fontColor", "langIn", "langOut", "fName", "splitS", "autoS"].forEach(k => {
       const val = localStorage.getItem(k);
       if(val) {
         if(k === "fontSize") { sizeSlider.value = val; updateSize(val); }
@@ -120,120 +165,167 @@
         else if(k === "langIn") selIn.value = val;
         else if(k === "langOut") selOut.value = val;
         else if(k === "fName") fileNameInput.value = val;
-      } else { if(k === "langIn") selIn.value = "ja-JP"; if(k === "langOut") selOut.value = "en-US"; }
+        else if(k === "splitS") splitSecInput.value = val;
+        else if(k === "autoS") autoSaveInput.value = val;
+      } else { 
+        if(k === "langIn") selIn.value = "ja-JP"; 
+        if(k === "langOut") selOut.value = "zh-CN"; 
+      }
     });
   });
 
-  [sizeSlider, mainColor, selIn, selOut, fileNameInput].forEach(el => { el.onchange = () => {
+  const saveSettings = () => {
     localStorage.setItem("fontSize", sizeSlider.value); localStorage.setItem("fontColor", mainColor.value);
     localStorage.setItem("langIn", selIn.value); localStorage.setItem("langOut", selOut.value);
-    localStorage.setItem("fName", fileNameInput.value);
-  };});
+    localStorage.setItem("fName", fileNameInput.value); localStorage.setItem("splitS", splitSecInput.value);
+    localStorage.setItem("autoS", autoSaveInput.value);
+  };
+  [sizeSlider, mainColor, selIn, selOut, fileNameInput, splitSecInput, autoSaveInput].forEach(el => el.onchange = saveSettings);
   sizeSlider.oninput = () => updateSize(sizeSlider.value);
 
-  document.getElementById('btn-help').onclick = () => document.getElementById('modal-help').style.display = 'block';
-  document.getElementById('btn-close-help').onclick = () => document.getElementById('modal-help').style.display = 'none';
-
-  function getTimestamp() {
-    const n = new Date();
-    return n.getFullYear().toString().slice(-2) + (n.getMonth()+1).toString().padStart(2,'0') + n.getDate().toString().padStart(2,'0') + "_" + n.getHours().toString().padStart(2,'0') + n.getMinutes().toString().padStart(2,'0') + n.getSeconds().toString().padStart(2,'0');
+  async function startAudioMonitor() {
+    if (audioContext) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+      analyser.fftSize = 256;
+      dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const draw = () => {
+        if (!isListening) return;
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0; for(let i=0; i<dataArray.length; i++) sum += dataArray[i];
+        let volume = Math.min(100, (sum / dataArray.length) * 2.5);
+        volBar.style.width = volume + "%";
+        volBar.style.background = volume > 70 ? "red" : "#00ff00";
+        animationId = requestAnimationFrame(draw);
+      };
+      draw();
+    } catch(e) {}
   }
 
-  function saveLogFile() {
-    if (chatLog.length === 0) return;
-    const ts = getTimestamp();
-    let fname = fileNameInput.value || "log";
-    if(nameDatePos.value === 'pre') fname = ts + "_" + fname;
-    if(nameDatePos.value === 'post') fname = fname + "_" + ts;
-    const blob = new Blob([chatLog.join("\n")], { type: "text/plain" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = fname + ".txt"; a.click();
-    chatLog = [];
+  function restartRecognition() {
+    if (!recognition) return;
+    recognition.onend = null; recognition.onresult = null;
+    try { recognition.stop(); } catch(e) {}
+    setTimeout(() => { if (isListening) initRecognition(); }, 50);
   }
 
   function initRecognition() {
     const Speech = window.webkitSpeechRecognition || window.SpeechRecognition;
-    if (!Speech) { alert("このブラウザは音声認識に対応していません。Chromeをお試しください。"); return; }
+    if (!Speech) return;
     recognition = new Speech();
     recognition.lang = selIn.value;
     recognition.continuous = true;
     recognition.interimResults = true;
-
+    
     recognition.onresult = e => {
-      let fullTranscript = "";
-      for (let i = 0; i < e.results.length; i++) { fullTranscript += e.results[i][0].transcript; }
-      let newText = fullTranscript.substring(processedCharsCount).trim();
-      if (!newText) return;
+      lastSpeechTime = Date.now();
+      statusDot.textContent = "LIVE";
+      statusDot.style.color = "red";
       
-      const now = Date.now();
-      const splitLimit = (parseFloat(splitSecInput.value) || 2.0) * 1000;
-      
-      // 短く区切るための判定：確定フラグ or 指定秒数以上の無音/継続
-      if (e.results[e.results.length - 1].isFinal || (now - lastResultTime > splitLimit)) {
-        interimContainer.innerHTML = "";
-        commitTranslation(newText);
-        processedCharsCount = fullTranscript.length;
-      } else {
-        showInterim(newText);
+      let interimTranscript = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        let transcript = e.results[i][0].transcript;
+        if (e.results[i].isFinal) {
+          // 確定した瞬間に即時追加するロジックも組めますが、
+          // 現状の「無音検知で確定」ロジックと相性が良いのは累積表示です。
+        }
+        interimTranscript += transcript;
       }
-      lastResultTime = now;
+      
+      if (interimTranscript.trim()) {
+        currentText = interimTranscript.trim();
+        interimContainer.textContent = "... " + currentText;
+        interimContainer.scrollTop = interimContainer.scrollHeight;
+      }
     };
 
-    recognition.onend = () => { if (isListening) recognition.start(); };
-    recognition.onerror = e => { console.error("Speech Error:", e.error); };
+    recognition.onend = () => { if (isListening) setTimeout(initRecognition, 200); };
     recognition.start();
-    document.getElementById('status-dot').textContent = "LIVE";
-    const interval = (Math.max(1, parseFloat(autoSaveInput.value) || 10)) * 60000;
-    autoSaveTimer = setInterval(saveLogFile, interval);
+    startAudioMonitor();
   }
 
-  async function showInterim(text) {
-    const tl = selOut.value;
-if (selIn.value.startsWith(tl)) {
-      interimContainer.innerHTML = `<div class="orig-text">... ${text}</div><div class="trans-text" style="color:${mainColor.value}">${text}</div>`;
-      return;
-    }
-      try {
-      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`);
-      const data = await res.json();
-      const trans = data[0].map(s => s[0]).join("");
-      interimContainer.innerHTML = `<div class="orig-text">... ${text}</div><div class="trans-text" style="color:${mainColor.value}">${trans}</div>`;
-    } catch(e) { console.error("Translation Error", e); }
+  function startWatchdog() {
+    clearInterval(watchdogInterval);
+    watchdogInterval = setInterval(() => {
+      if (!isListening) return;
+      const now = Date.now();
+      const splitLimit = (parseFloat(splitSecInput.value) || 1.0) * 1000;
+      if (currentText && (now - lastSpeechTime > splitLimit)) {
+        commitTranslation(currentText);
+        currentText = ""; interimContainer.textContent = "";
+        restartRecognition();
+      }
+      if (now - lastSpeechTime > 15000) {
+        statusDot.textContent = "WATCHDOG"; statusDot.style.color = "#ffaa00";
+        lastSpeechTime = now; restartRecognition();
+      }
+    }, 100);
   }
 
   async function commitTranslation(text) {
     if(!text) return;
     const tl = selOut.value;
-if (selIn.value.startsWith(tl)) {
-      const row = document.createElement("div");
-      row.className = "log-item large-size";
-      row.innerHTML = `<div class="orig-text">${text}</div><div class="trans-text" style="color:${mainColor.value}">${text}</div>`;
-      logContainer.prepend(row);
-      chatLog.push(`${getTimestamp()}\t"${text}"\t"${text}"`);
-      while (logContainer.children.length > 50) logContainer.lastChild.remove();
-      return;
+    let trans = text;
+    if (!selIn.value.startsWith(tl)) {
+      try {
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`);
+        const data = await res.json();
+        trans = data[0].map(s => s[0]).join("");
+      } catch(e) { trans = "[Error]"; }
     }
-      
-    try {
-      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`);
-      const data = await res.json();
-      const trans = data[0].map(s => s[0]).join("");
-      const row = document.createElement("div");
-      row.className = "log-item large-size";
-      row.innerHTML = `<div class="orig-text">${text}</div><div class="trans-text" style="color:${mainColor.value}">${trans}</div>`;
-      logContainer.prepend(row);
-      chatLog.push(`${getTimestamp()}\t"${text}"\t"${trans}"`);
-      while (logContainer.children.length > 50) logContainer.lastChild.remove();
-    } catch(e) { console.error("Translation Error", e); }
+    const row = document.createElement("div");
+    row.className = "log-item";
+    row.innerHTML = `<div class="orig-text">${text}</div><div class="trans-text" style="color:${mainColor.value}">${trans}</div>`;
+    logContainer.prepend(row);
+    chatLog.push(`${getTimestamp()}\t${text}\t${trans}`);
+    while (logContainer.children.length > 50) logContainer.lastChild.remove();
+  }
+
+  function getTimestamp() {
+    const n = new Date();
+    const f = (v) => v.toString().padStart(2, '0');
+    return n.getFullYear().toString().slice(-2) + f(n.getMonth()+1) + f(n.getDate()) + "_" + f(n.getHours()) + f(n.getMinutes()) + f(n.getSeconds());
+  }
+
+function saveLogFile() {
+    if (chatLog.length === 0 || !fileNameInput.value.trim()) return;
+    const ts = getTimestamp();
+    let fname = fileNameInput.value.trim();
+    if(nameDatePos.value === 'pre') fname = ts + "_" + fname;
+    if(nameDatePos.value === 'post') fname = fname + "_" + ts;
+
+    // 各項目をダブルクォーテーションで囲み、中の " を "" にエスケープする
+    const escapeVal = (v) => `"${String(v).replace(/"/g, '""')}"`;
+    const content = chatLog.map(line => {
+      const [time, orig, trans] = line.split('\t');
+      return `${escapeVal(time)}\t${escapeVal(orig)}\t${escapeVal(trans)}`;
+    }).join("\r\n"); // WindowsのExcel親和性を高めるため CRLF 改行
+    
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([bom, content], { type: "text/plain;charset=utf-8" });
+    
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = fname + ".txt"; a.click();
+    chatLog = [];
   }
 
   btnToggle.onclick = () => {
     if (!isListening) {
-      isListening = true; chatLog = []; processedCharsCount = 0; logContainer.innerHTML = ""; interimContainer.innerHTML = ""; initRecognition();
+      isListening = true; chatLog = []; logContainer.innerHTML = ""; interimContainer.textContent = "";
+      lastSpeechTime = Date.now();
+      initRecognition(); startWatchdog();
       btnToggle.textContent = "停止"; btnToggle.style.background = "#cc0000";
+      autoSaveTimer = setInterval(saveLogFile, (parseFloat(autoSaveInput.value) || 10) * 60000);
     } else {
-      isListening = false; clearInterval(autoSaveTimer); recognition.onend = null; recognition.stop();
+      if (currentText) commitTranslation(currentText);
+      isListening = false; clearInterval(autoSaveTimer); clearInterval(watchdogInterval);
+      if (recognition) { recognition.onend = null; recognition.stop(); }
       saveLogFile();
-      setTimeout(() => location.reload(), 500);
+      statusDot.textContent = "STOPPED";
+      btnToggle.textContent = "同時翻訳開始"; btnToggle.style.background = "#0066ff";
     }
   };
 </script>
