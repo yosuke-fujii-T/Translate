@@ -5,10 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SimultaneousInterpreter</title>
   <style>
+
+
+    /*ver.1.95-1    97行目くらいを編集*/
+
+
     :root { --main-fs: 75px; --sub-fs: 25px; }
     html, body { height: 100%; margin: 0; padding: 0; background: #000; color: #fff; overflow: hidden; font-family: "BIZ UDPGothic", "Hiragino Sans", "Meiryo", sans-serif; }
     body { display: flex; flex-direction: column; }
-    
     /* ヘッダー UI */
     .header { background: #1a1a1a; padding: 6px 12px; border-bottom: 2px solid #333; flex-shrink: 0; font-size: 11px; z-index: 100; display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; overflow-x: auto; }
     .group { background: #222; padding: 3px 8px; border-radius: 4px; border: 1px solid #444; display: flex; gap: 6px; align-items: center; white-space: nowrap; }
@@ -46,7 +50,12 @@
 
     /* フッター：バージョンとクレジット */
     .footer-info { position: fixed; bottom: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; pointer-events: none; z-index: 200; }
-    .footer-text { font-size: 14px; color: #ffffff; font-weight: bold; text-shadow: 1px 1px 3px #000; }
+   .footer-text { 
+      font-size: clamp(2px, 1.0vw, 20px); /* (最小px,基本vw,最大px) という意味 */
+      color: #ffffff; 
+      font-weight: bold; 
+      text-shadow: 1px 1px 3px #000; 
+    }
 
     /* 説明書モーダル */
     #modal-help { display: none; position: fixed; top: 5%; left: 5%; width: 90%; height: 85%; background: #1a1a1a; border: 2px solid #555; padding: 25px; overflow-y: auto; z-index: 300; line-height: 1.6; border-radius: 12px; box-shadow: 0 0 50px #000; }
@@ -85,7 +94,7 @@
 </div>
 
 <div class="footer-info">
-  <div class="footer-text">Ver 203 Professional</div>
+  <div class="footer-text">Ver.1.95</div>
   <div class="footer-text">Created by フジイヨウスケ with Gemini & ChatGPT</div>
 </div>
 
@@ -102,8 +111,17 @@
     </ul>
   </div>
 
+<div class="help-section">
+  <h3>2. 便利な操作・キャンセル機能</h3>
+  <ul>
+    <li><b>言語のクイック入れ替え:</b> 上部バーの「音声」と「翻訳」の間にある<b>「⇄」ボタン</b>を押すと、言語設定を瞬時に入れ替えることができます。双方向のやり取りに便利です。</li>
+    <li><b>発話のリセット（キャンセル）:</b> 言い間違えたり、認識が乱れたりした時は、確定（ログ出力）される前に<b>「Escキー」を押す</b>か、<b>上部の青枠（暫定ボックス）を直接クリック</b>してください。</li>
+    <li><b>リセットの効果:</b> 現在入力中の文字が消去され、ログにも残りません。リセット後はすぐに言い直すことができます（一瞬だけ背景が白く光ります）。</li>
+  </ul>
+</div>
+
   <div class="help-section">
-    <h3>2. セキュリティと高度な文字起こし活用</h3>
+    <h3>3. セキュリティと高度な文字起こし活用</h3>
     <ul>
       <li><b>高セキュリティ文字起こし:</b> 「音声」と「翻訳」を同じ言語（例：日本→日本）に設定した場合、外部の翻訳APIサーバーへテキストを送信する処理が完全にスキップされます。これにより、情報の外部露出を極限まで抑えた<b>「高セキュリティ文字起こし専用ソフト」</b>としても安心して活用いただけます。</li>
       <li><b>情報の保護:</b> 同言語設定時は翻訳通信が発生しないため、機密性の高い会議の「文字起こし専用ソフト」として安全かつ強力に機能します。</li>
@@ -112,7 +130,7 @@
   </div>
 
   <div class="help-section">
-    <h3>3. 想定される使用用途</h3>
+    <h3>4. 想定される使用用途</h3>
     <ul>
       <li><b>多言語会議:</b> 海外拠点とのミーティングにおけるリアルタイム字幕。</li>
       <li><b>高精度文字起こし:</b> 議事録作成の補助ツールとして（同言語設定で活用）。</li>
@@ -122,7 +140,7 @@
   </div>
 
   <div class="help-section">
-    <h3>4. 利用上の注意点</h3>
+    <h3>5. 利用上の注意点</h3>
     <ul>
       <li><b>音声解析の仕組み:</b> 音声から文字への変換はブラウザの標準機能（Googleサーバー等）を利用します。</li>
       <li><b>マイク品質:</b> 精度はマイクに依存します。静かな環境での使用や外付けマイクの使用を推奨します。</li>
@@ -131,7 +149,7 @@
   </div>
 
 <div class="help-section">
-    <h3>5. 対応ブラウザの分類と根拠（重要）</h3>
+    <h3>6. 対応ブラウザの分類と根拠（重要）</h3>
     <ul>
       <li><b>◎ 動作確認済み:</b> <b>Google Chrome</b> / <b>Microsoft Edge</b>
         <br>（根拠：開発元（Google/MS）の音声認識サーバーをフル活用できるため、最も安定して動作します。）</li>
@@ -144,7 +162,7 @@
   </div>
 
   <div class="help-section">
-    <h3>6. 困った時の対処法（Q&A）</h3>
+    <h3>7. 困った時の対処法（Q&A）</h3>
     <ul>
       <li><b>Q. 字幕が出ない:</b> 
         <ol>
@@ -160,7 +178,7 @@
   </div>
 
 <div class="help-section">
-    <h3>7. データの保存と連携</h3>
+    <h3>8. データの保存と連携</h3>
     <ul>
       <li><b>ログの保存条件:</b> 上部バーの「ログ名」が入力されている時のみ、停止時または自動保存時にファイルが書き出されます。</li>
       <li><b>【推奨】保存先ダイアログを非表示にする:</b>
@@ -176,6 +194,17 @@
       <li><b>保存の注意点:</b> 自動保存は「定期的な書き出し」のため、ブラウザが強制終了した直近数分間の発言は保存されない場合があります。</li>
     </ul>
 </div>
+
+<div class="help-section">
+    <h3>9. 免責事項</h3>
+    <ul>
+      <li><b>開発と仕様変更:</b> 本ソフトは個人開発のツールであり、<b>作成者の判断により予告なく機能の追加・変更・削除、または公開の停止を行う場合があります。</b></li>
+      <li><b>サービスの継続性:</b> 音声認識や翻訳機能は外部サービス（Google等）に依存しているため、それらの仕様変更やサービス終了に伴い、本ソフトが利用できなくなる可能性があります。</li>
+      <li><b>自己責任の原則:</b> 本ソフトの利用によって生じた、直接的・間接的な損害（データの消失、翻訳の誤りによるトラブル等）について、作成者は一切の責任を負いません。</li>
+      <li><b>業務利用において:</b> 重要な会議等で使用される際は、万が一の動作不良に備え、バックアップの録音手段などを併用することを推奨します。</li>
+    </ul>
+  </div>
+
   <button id="btn-close-help" onclick="document.getElementById('modal-help').style.display='none'">マニュアルを閉じる</button>
 </div>
 
@@ -387,6 +416,32 @@ function saveLogFile() {
       btnToggle.textContent = "同時翻訳開始"; btnToggle.style.background = "#0066ff";
     }
 };
+// 現在の入力（暫定テキスト）をリセットする関数
+function resetInterim() {
+  currentText = "";
+  interimContainer.textContent = "";
+  
+  // 視覚的なフィードバック（一瞬だけ背景を白く光らせる）
+  interimContainer.style.background = "rgba(255,255,255,0.2)";
+  setTimeout(() => {
+    interimContainer.style.background = "transparent";
+  }, 100);
+
+  if (isListening) {
+    restartRecognition();
+  }
+}
+// Escキーでリセット
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    resetInterim();
+  }
+});
+
+// 暫定ボックス（青枠）をクリックでリセット
+interimContainer.style.cursor = "pointer"; // カーソルを指マークに
+interimContainer.onclick = resetInterim;
+interimContainer.title = "クリックで入力をリセット";
 
 // マニュアル表示切り替え
   const btnHelp = document.getElementById('btn-help');
